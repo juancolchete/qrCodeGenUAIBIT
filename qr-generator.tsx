@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Download, QrCode } from "lucide-react"
+import { Download, QrCode, Palette } from "lucide-react"
 import QRCode from "qrcode"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -20,6 +20,20 @@ export default function QRGenerator() {
   const [selectedCommunity, setSelectedCommunity] = useState<any>(null)
   const [isLoadingCommunities, setIsLoadingCommunities] = useState(true)
   const [noLogo, setNoLogo] = useState(false)
+  const [foregroundColor, setForegroundColor] = useState("#000000")
+  const [backgroundColor, setBackgroundColor] = useState("#FFFFFF")
+
+  // Predefined color presets
+  const colorPresets = [
+    { name: "Classic", fg: "#000000", bg: "#FFFFFF" },
+    { name: "Blue", fg: "#1E40AF", bg: "#FFFFFF" },
+    { name: "Green", fg: "#059669", bg: "#FFFFFF" },
+    { name: "Purple", fg: "#7C3AED", bg: "#FFFFFF" },
+    { name: "Red", fg: "#DC2626", bg: "#FFFFFF" },
+    { name: "Dark Mode", fg: "#FFFFFF", bg: "#1F2937" },
+    { name: "Ocean", fg: "#0EA5E9", bg: "#F0F9FF" },
+    { name: "Forest", fg: "#16A34A", bg: "#F0FDF4" },
+  ]
 
   useEffect(() => {
     const fetchCommunities = async () => {
@@ -64,6 +78,11 @@ export default function QRGenerator() {
     }
   }
 
+  const applyColorPreset = (preset: { fg: string; bg: string }) => {
+    setForegroundColor(preset.fg)
+    setBackgroundColor(preset.bg)
+  }
+
   const generateQRCode = async () => {
     if (!inputValue.trim()) return
 
@@ -80,13 +99,13 @@ export default function QRGenerator() {
       canvas.width = 400 // Increased from 300 to 400
       canvas.height = 400 // Increased from 300 to 400
 
-      // Generate QR code with higher resolution
+      // Generate QR code with higher resolution and custom colors
       await QRCode.toCanvas(canvas, inputValue, {
         width: 400, // Increased from 300 to 400
         margin: 2,
         color: {
-          dark: "#000000",
-          light: "#FFFFFF",
+          dark: foregroundColor,
+          light: backgroundColor,
         },
         errorCorrectionLevel: "H", // High error correction to accommodate logo
       })
@@ -117,14 +136,16 @@ export default function QRGenerator() {
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = "high"
 
-        // Draw white background circle for logo with better padding
-        ctx.fillStyle = "#FFFFFF"
+        // Draw background circle for logo (use background color or white if background is too dark)
+        const logoBackgroundColor =
+          backgroundColor === "#FFFFFF" || isLightColor(backgroundColor) ? "#FFFFFF" : "#FFFFFF"
+        ctx.fillStyle = logoBackgroundColor
         ctx.beginPath()
         ctx.arc(canvas.width / 2, canvas.height / 2, logoSize / 2 + 8, 0, 2 * Math.PI)
         ctx.fill()
 
         // Add subtle border around the logo background
-        ctx.strokeStyle = "#E5E7EB"
+        ctx.strokeStyle = isLightColor(backgroundColor) ? "#E5E7EB" : "#374151"
         ctx.lineWidth = 1
         ctx.stroke()
 
@@ -157,14 +178,16 @@ export default function QRGenerator() {
           ctx.imageSmoothingEnabled = true
           ctx.imageSmoothingQuality = "high"
 
-          // Draw white background circle for logo
-          ctx.fillStyle = "#FFFFFF"
+          // Draw background circle for logo
+          const logoBackgroundColor =
+            backgroundColor === "#FFFFFF" || isLightColor(backgroundColor) ? "#FFFFFF" : "#FFFFFF"
+          ctx.fillStyle = logoBackgroundColor
           ctx.beginPath()
           ctx.arc(canvas.width / 2, canvas.height / 2, logoSize / 2 + 8, 0, 2 * Math.PI)
           ctx.fill()
 
           // Add subtle border
-          ctx.strokeStyle = "#E5E7EB"
+          ctx.strokeStyle = isLightColor(backgroundColor) ? "#E5E7EB" : "#374151"
           ctx.lineWidth = 1
           ctx.stroke()
 
@@ -200,6 +223,16 @@ export default function QRGenerator() {
     }
   }
 
+  // Helper function to determine if a color is light
+  const isLightColor = (color: string) => {
+    const hex = color.replace("#", "")
+    const r = Number.parseInt(hex.substr(0, 2), 16)
+    const g = Number.parseInt(hex.substr(2, 2), 16)
+    const b = Number.parseInt(hex.substr(4, 2), 16)
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000
+    return brightness > 128
+  }
+
   const downloadQRCode = () => {
     if (!qrCodeDataURL) return
 
@@ -220,7 +253,7 @@ export default function QRGenerator() {
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">UAIBIT QR Generator</h1>
-          <p className="text-gray-600">Generate QR codes with the UAIBIT logo embedded</p>
+          <p className="text-gray-600">Generate QR codes with custom colors and logos</p>
         </div>
 
         <Card className="mb-8">
@@ -229,7 +262,7 @@ export default function QRGenerator() {
               <QrCode className="w-5 h-5" />
               Generate QR Code
             </CardTitle>
-            <CardDescription>Enter any text, URL, or data to generate a QR code with the UAIBIT logo</CardDescription>
+            <CardDescription>Enter any text, URL, or data to generate a customized QR code</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-4">
@@ -261,6 +294,103 @@ export default function QRGenerator() {
                 <p className="text-xs text-gray-500">
                   This determines which logo appears in the center of your QR code
                 </p>
+              </div>
+
+              {/* Color Customization Section */}
+              <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-4 h-4" />
+                  <Label className="text-sm font-medium">Color Customization</Label>
+                </div>
+
+                {/* Color Presets */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-600">Quick Presets</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {colorPresets.map((preset, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => applyColorPreset(preset)}
+                        className="h-8 px-3 text-xs"
+                        style={{
+                          backgroundColor: preset.bg,
+                          color: preset.fg,
+                          borderColor: preset.fg,
+                        }}
+                      >
+                        {preset.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Color Pickers */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fg-color" className="text-sm">
+                      Foreground Color
+                    </Label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        id="fg-color"
+                        type="color"
+                        value={foregroundColor}
+                        onChange={(e) => setForegroundColor(e.target.value)}
+                        className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                      />
+                      <Input
+                        value={foregroundColor}
+                        onChange={(e) => setForegroundColor(e.target.value)}
+                        placeholder="#000000"
+                        className="text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">QR code pattern color</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bg-color" className="text-sm">
+                      Background Color
+                    </Label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        id="bg-color"
+                        type="color"
+                        value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                      />
+                      <Input
+                        value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        placeholder="#FFFFFF"
+                        className="text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">QR code background color</p>
+                  </div>
+                </div>
+
+                {/* Color Preview */}
+                <div className="flex items-center gap-3 p-3 bg-white rounded border">
+                  <div
+                    className="w-12 h-12 rounded border-2 flex items-center justify-center"
+                    style={{
+                      backgroundColor: backgroundColor,
+                      borderColor: foregroundColor,
+                    }}
+                  >
+                    <div className="w-6 h-6 rounded-sm" style={{ backgroundColor: foregroundColor }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Color Preview</p>
+                    <p className="text-xs text-gray-500">
+                      Foreground: {foregroundColor} | Background: {backgroundColor}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -322,7 +452,7 @@ export default function QRGenerator() {
           <Card>
             <CardHeader>
               <CardTitle>Generated QR Code</CardTitle>
-              <CardDescription>Your QR code with UAIBIT logo is ready</CardDescription>
+              <CardDescription>Your customized QR code is ready</CardDescription>
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <div className="inline-block p-4 bg-white rounded-lg shadow-sm">
@@ -338,6 +468,9 @@ export default function QRGenerator() {
                 </Button>
               </div>
               <p className="text-sm text-gray-500">Encoded value: {inputValue}</p>
+              <p className="text-xs text-gray-400">
+                Colors: {foregroundColor} on {backgroundColor}
+              </p>
             </CardContent>
           </Card>
         )}
