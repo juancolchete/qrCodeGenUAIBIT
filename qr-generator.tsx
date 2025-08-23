@@ -19,6 +19,7 @@ export default function QRGenerator() {
   const [communities, setCommunities] = useState<any[]>([])
   const [selectedCommunity, setSelectedCommunity] = useState<any>(null)
   const [isLoadingCommunities, setIsLoadingCommunities] = useState(true)
+  const [noLogo, setNoLogo] = useState(false)
 
   useEffect(() => {
     const fetchCommunities = async () => {
@@ -51,10 +52,15 @@ export default function QRGenerator() {
   }, [])
 
   const handleCommunityChange = (value: string) => {
-    const community = communities.find((c, index) => index.toString() === value)
-    if (community) {
-      setSelectedCommunity(community)
-      // Don't automatically populate inputValue - let user fill it freely
+    if (value === "no-logo") {
+      setNoLogo(true)
+      setSelectedCommunity(null)
+    } else {
+      setNoLogo(false)
+      const community = communities.find((c, index) => index.toString() === value)
+      if (community) {
+        setSelectedCommunity(community)
+      }
     }
   }
 
@@ -84,6 +90,15 @@ export default function QRGenerator() {
         },
         errorCorrectionLevel: "H", // High error correction to accommodate logo
       })
+
+      // Check if no logo option is selected
+      if (noLogo) {
+        // Just use the QR code without any logo
+        const dataURL = canvas.toDataURL("image/png", 1.0)
+        setQrCodeDataURL(dataURL)
+        setIsGenerating(false)
+        return
+      }
 
       // Determine which logo to use
       const logoUrl =
@@ -221,7 +236,13 @@ export default function QRGenerator() {
               <div className="space-y-2">
                 <Label htmlFor="community-select">Select Community (for logo)</Label>
                 <Select
-                  value={selectedCommunity ? communities.findIndex((c) => c === selectedCommunity).toString() : ""}
+                  value={
+                    noLogo
+                      ? "no-logo"
+                      : selectedCommunity
+                        ? communities.findIndex((c) => c === selectedCommunity).toString()
+                        : ""
+                  }
                   onValueChange={handleCommunityChange}
                   disabled={isLoadingCommunities}
                 >
@@ -229,6 +250,7 @@ export default function QRGenerator() {
                     <SelectValue placeholder={isLoadingCommunities ? "Loading communities..." : "Select a community"} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="no-logo">No Logo</SelectItem>
                     {communities.map((community, index) => (
                       <SelectItem key={index} value={index.toString()}>
                         {community.name || community.title || community.id || `Community ${index + 1}`}
@@ -263,11 +285,13 @@ export default function QRGenerator() {
             >
               {isGenerating ? "Generating..." : isLoadingCommunities ? "Loading..." : "Generate QR Code"}
             </Button>
-            {selectedCommunity && (
+            {(selectedCommunity || noLogo) && (
               <div className="p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-white rounded border flex items-center justify-center">
-                    {selectedCommunity.logo || selectedCommunity.image || selectedCommunity.icon ? (
+                    {noLogo ? (
+                      <QrCode className="w-6 h-6 text-gray-400" />
+                    ) : selectedCommunity.logo || selectedCommunity.image || selectedCommunity.icon ? (
                       <img
                         src={selectedCommunity.logo || selectedCommunity.image || selectedCommunity.icon}
                         alt="Community logo"
@@ -282,9 +306,11 @@ export default function QRGenerator() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700">
-                      {selectedCommunity.name || selectedCommunity.title || "Unknown Community"}
+                      {noLogo ? "No Logo" : selectedCommunity.name || selectedCommunity.title || "Unknown Community"}
                     </p>
-                    <p className="text-xs text-gray-500">Logo will appear in QR code center</p>
+                    <p className="text-xs text-gray-500">
+                      {noLogo ? "QR code will be generated without center logo" : "Logo will appear in QR code center"}
+                    </p>
                   </div>
                 </div>
               </div>
