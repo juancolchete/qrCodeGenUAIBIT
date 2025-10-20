@@ -26,6 +26,7 @@ export default function QRGenerator() {
   const [customImage, setCustomImage] = useState<string | null>(null)
   const [customImageFile, setCustomImageFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [errorCorrectionLevel, setErrorCorrectionLevel] = useState<"L" | "M" | "Q" | "H">("M")
 
   // Predefined color presets
   const colorPresets = [
@@ -123,12 +124,12 @@ export default function QRGenerator() {
       const svgString = await QRCode.toString(inputValue, {
         type: "svg",
         width: 400,
-        margin: 2,
+        margin: 4,
         color: {
           dark: foregroundColor,
           light: backgroundColor,
         },
-        errorCorrectionLevel: "H",
+        errorCorrectionLevel: errorCorrectionLevel,
       })
 
       // If no logo, return the SVG as is
@@ -220,12 +221,12 @@ export default function QRGenerator() {
 
       await QRCode.toCanvas(canvas, inputValue, {
         width: 400,
-        margin: 2,
+        margin: 4,
         color: {
           dark: foregroundColor,
           light: backgroundColor,
         },
-        errorCorrectionLevel: "H",
+        errorCorrectionLevel: errorCorrectionLevel,
       })
 
       if (noLogo) {
@@ -565,6 +566,48 @@ export default function QRGenerator() {
                 </div>
               </div>
 
+              {/* Error Correction Level Selector */}
+              <div className="space-y-2">
+                <Label htmlFor="error-correction">Error Correction Level</Label>
+                <Select
+                  value={errorCorrectionLevel}
+                  onValueChange={(value: "L" | "M" | "Q" | "H") => setErrorCorrectionLevel(value)}
+                >
+                  <SelectTrigger id="error-correction">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="L">
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">Low (L) - 7% Recovery</span>
+                        <span className="text-xs text-gray-500">Least dense, minimal damage tolerance</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="M">
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">Medium (M) - 15% Recovery</span>
+                        <span className="text-xs text-gray-500">Balanced density and reliability</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Q">
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">Quartile (Q) - 25% Recovery</span>
+                        <span className="text-xs text-gray-500">Higher density, better damage tolerance</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="H">
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">High (H) - 30% Recovery</span>
+                        <span className="text-xs text-gray-500">Densest pattern, maximum damage tolerance</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  Higher levels create denser QR codes but can recover from more damage or obstruction
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="qr-input">QR Code Data</Label>
                 <Input
@@ -664,6 +707,17 @@ export default function QRGenerator() {
               <p className="text-sm text-gray-500">Encoded value: {inputValue}</p>
               <p className="text-xs text-gray-400">
                 Colors: {foregroundColor} on {backgroundColor}
+              </p>
+              <p className="text-xs text-gray-400">
+                Error Correction: {errorCorrectionLevel} (
+                {errorCorrectionLevel === "L"
+                  ? "7%"
+                  : errorCorrectionLevel === "M"
+                    ? "15%"
+                    : errorCorrectionLevel === "Q"
+                      ? "25%"
+                      : "30%"}{" "}
+                recovery)
               </p>
               <div className="text-xs text-gray-400 space-y-1">
                 <p>• PNG: High-quality raster image (recommended for print)</p>
